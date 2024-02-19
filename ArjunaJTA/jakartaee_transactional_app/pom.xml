@@ -13,35 +13,14 @@
     <description>basic integration example</description>
     <packaging>war</packaging>
 
-    <repositories>
-        <repository>
-            <id>jboss-public-repository-group</id>
-            <name>JBoss Public Maven Repository Group</name>
-            <url>https://repository.jboss.org/nexus/content/groups/public/</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-    <pluginRepositories>
-        <pluginRepository>
-            <id>jboss-public-repository-group</id>
-            <name>JBoss Public Maven Repository Group</name>
-            <url>http://repository.jboss.org/nexus/content/groups/public-jboss/</url>
-            <layout>default</layout>
-            <releases>
-                <enabled>true</enabled>
-                <updatePolicy>never</updatePolicy>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>never</updatePolicy>
-            </snapshots>
-        </pluginRepository>
-    </pluginRepositories>
+    <properties>
+        <server.args>-Dprojectdir=${project.build.directory}</server.args>
+        <surefire.argline></surefire.argline>
+        <jvm.args>-server -Xms64m -Xmx1024m -XX:MaxMetaspaceSize=512m ${server.args}</jvm.args>
+        <jvm.args.debug>-Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=n</jvm.args.debug>
+        <ipv6.server.jvm.args>-Djboss.bind.address=[::1] -Djboss.bind.address.management=[::1] -Djboss.bind.address.unsecure=[::1] -Djava.net.preferIPv4Stack=false -Djava.net.preferIPv6Addresses=true</ipv6.server.jvm.args>
+    </properties>
+
     <build>
         <finalName>${project.artifactId}</finalName>
         <plugins>
@@ -68,6 +47,20 @@
                 <configuration>
                     <source>11</source>
                     <target>11</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${version.surefire.plugin}</version>
+                <configuration>
+                    <skip>false</skip>
+                    <argLine>${surefire.argline}</argLine>
+                    <systemPropertyVariables combine.children="append">
+                        <server.jvm.args>${jvm.args} ${jvm.args.debug}</server.jvm.args>
+                        <node.address>127.0.0.1</node.address>
+                        <xboot.classpath>${xboot.classpath}</xboot.classpath>
+                    </systemPropertyVariables>
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
                 </configuration>
             </plugin>
         </plugins>
@@ -98,11 +91,55 @@
            <version>${version.wildfly.logging}</version>
            <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.wildfly.extras.creaper</groupId>
+            <artifactId>creaper-core</artifactId>
+            <version>${version.creaper}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.wildfly.core</groupId>
+            <artifactId>wildfly-controller-client</artifactId>
+            <version>${version.wildfly.core}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.wildfly.core</groupId>
+            <artifactId>wildfly-cli</artifactId>
+            <version>${version.wildfly.core}</version>
+        </dependency>
         <!-- Arquillian allows you to test the example inside a container -->
         <dependency>
             <groupId>org.jboss.arquillian.junit</groupId>
             <artifactId>arquillian-junit-container</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.arquillian.protocol</groupId>
+            <artifactId>arquillian-protocol-servlet-jakarta</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.arquillian.core</groupId>
+            <artifactId>arquillian-core-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.arquillian.extension</groupId>
+            <artifactId>arquillian-extension-byteman</artifactId>
+            <version>${version.arquillian.byteman}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.byteman</groupId>
+            <artifactId>byteman</artifactId>
+            <version>${version.byteman}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.byteman</groupId>
+            <artifactId>byteman-submit</artifactId>
+            <version>${version.byteman}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>jakarta.ejb</groupId>
@@ -159,6 +196,7 @@
                                 -->
                                 <server.jvm.args>${jvm.args.other} ${jvm.args.memory} ${jvm.args.debug}</server.jvm.args>
                                 <node.address>127.0.0.1</node.address>
+                                <xboot.classpath>${xboot.classpath}</xboot.classpath>
                             </systemPropertyVariables>
                             <redirectTestOutputToFile>true</redirectTestOutputToFile>
                         </configuration>
@@ -198,6 +236,20 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+        <!-- Byteman-Arquillian-related profiles for configuring use of Byteman on different platforms/JDKs-->
+        <!-- these setup is needed for Arquillian Extension Byteman which makes possible to use Byteman rules with @BMRule while Arquillian JUnit runner is in command -->
+        <profile>
+            <id>use-toolsjar-jigsaw</id>
+            <activation>
+                <jdk>[1.9,)</jdk>
+            </activation>
+            <properties>
+                <!-- required for VM attach under JDK 9-->
+                <surefire.argline>-Djdk.attach.allowAttachSelf=true</surefire.argline>
+                <xboot.classpath>-Djdk.attach.allowAttachSelf=true</xboot.classpath>
+            </properties>
+            <dependencies />
         </profile>
     </profiles>
 </project>
