@@ -1,7 +1,17 @@
 #!/bin/bash
 
+function finish() {
+   for pid in "$ID1" "$ID2" "$ID3"; do
+       [[ -z "$pid" || ! "$pid" =~ ^[0-9]+$ ]] && continue
+
+       if kill -0 "$pid" 2>/dev/null; then
+           kill -9 "$pid" 2>/dev/null || true
+       fi
+   done
+}
+
 # Change the following variables to match your WildFly installation
-#JBOSS_HOME="/home/mshikalw/Documents/AllGitFork/wildfly/build/target/wildfly-28.0.2.Final-SNAPSHOT"
+
 WILDFLY_BIN="$JBOSS_HOME/bin"
 
 
@@ -32,11 +42,34 @@ echo "Starting wildfly server"
 # Call and run start-wildfly-coordinator.sh
 source ./start-wildfly-coordinator.sh
 
+################################
+####### Start services #########
+################################
 
 echo "Starting all services"
 
-# Call and run start-services.sh
-source ./start-services.sh
+mvn clean package -DskipTests
+
+java -jar flight-service/target/quarkus-app/quarkus-run.jar &
+ID1=$!
+java -jar hotel-service/target/quarkus-app/quarkus-run.jar &
+ID2=$!
+java -jar trip-service/target/quarkus-app/quarkus-run.jar &
+ID3=$!
+
+# Wait for a few seconds to give time for the services to start
+sleep 10
+
+# Check if the services are running
+if $(jps | grep -q "quarkus-run.jar"); then
+  echo "All services started successfully!"
+else
+  echo "Failed to start one or more services. Please check the logs for more information."
+fi
+
+################################
+############# END ##############
+################################
 
 
 echo "Invoking trip service"
@@ -50,8 +83,4 @@ echo "Stopping wildfly server"
 # Call and run scrstop-wildfly-coordinatoript.sh
 source stop-wildfly-coordinator.sh
 
-
-echo "Stopping all services"
-
-# Call and run stop-services.sh using the 'source' or '.' command
-source ./stop-services.sh
+finish
