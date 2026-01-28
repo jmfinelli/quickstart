@@ -203,7 +203,7 @@ function init_jboss_home {
 function run_quickstarts {
   cd $WORKSPACE
   echo Running quickstarts
-  ./build.sh -B clean install -fae -DskipX11Tests=true -Dversion.narayana=$QUICKSTART_NARAYANA_VERSION -Dversion.org.jboss.narayana.lra=$LRA_CURRENT_VERSION
+  ./build.sh -B clean install -fae -DskipX11Tests=true -Dversion.narayana=$QUICKSTART_NARAYANA_VERSION -Dversion.org.jboss.narayana.lra=$LRA_CURRENT_VERSION -f rts/pom.xml
 }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
