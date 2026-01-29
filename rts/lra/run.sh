@@ -64,6 +64,15 @@ function restart_coordinator {
     ########## END not working
 }
 
+function wait_for_recovery() {
+    coord_port=8080
+    echo " ===== waiting for recovery ......."
+    curl ${CURL_IP_OPTS} http://localhost:${coord_port}/lra-coordinator/recovery
+    # sometimes it can take two scans to complete recovery
+    curl ${CURL_IP_OPTS} http://localhost:${coord_port}/lra-coordinator/recovery
+    echo " ===== recovery should have happened"
+}
+
 
 function wait_for_all_coordinators() {
     echo "Waiting for coordinators to be ready..."
@@ -129,11 +138,9 @@ ID4=$(start_service 8083 "flight-service/target/quarkus-app/quarkus-run.jar" -Dl
 ID5=$(start_service 8084 "trip-controller/target/quarkus-app/quarkus-run.jar" -Dlra.http.port=8080)
 ((PORT++))
 
-
 wait_for_all_coordinators
 
 MAVEN_OPTS=${IP_OPTS} mvn -f trip-client/pom.xml exec:java -Dexec.args="confirm"
-sleep 10
 MAVEN_OPTS=${IP_OPTS} mvn -f trip-client/pom.xml exec:java -Dexec.args="cancel"
 
 echo -e "\n\n\n"
@@ -142,14 +149,14 @@ echo "Booking ID was: $BOOKINGID"
 
 restart_coordinator
 wait_for_all_coordinators
-sleep 40
+wait_for_recovery
 echo -e "\n\n\n"
 
 BOOKINGIDENCODED=$(urlencode "$BOOKINGID")
 echo "Cancelling booking with ID: $BOOKINGIDENCODED"
 
 MAX_RETRIES=6
-SLEEP_TIME=10
+SLEEP_TIME=60
 
 for i in $(seq 1 $MAX_RETRIES); do
     echo "Attempt $i to cancel booking..."
@@ -173,6 +180,7 @@ for i in $(seq 1 $MAX_RETRIES); do
     if [ $i -lt $MAX_RETRIES ]; then
         restart_coordinator
         wait_for_all_coordinators
+        wait_for_recovery
         echo "Waiting $SLEEP_TIME seconds before retry..."
         sleep $SLEEP_TIME
     else
