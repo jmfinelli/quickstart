@@ -45,6 +45,7 @@ function wait_for_recovery() {
 
 
 function wait_for_all_coordinators() {
+    set +e
     echo "Waiting for coordinators to be ready..."
 
     COORDINATOR_PORTS=(8080 8081 8082 8083 8084)
@@ -56,6 +57,8 @@ function wait_for_all_coordinators() {
             if curl -s "http://localhost:${port}/q/health/ready" >/dev/null; then
                 echo "Coordinator at ${port} ready"
                 ((CHECK++))
+            else
+                echo "Not ready: ${port}"
             fi
         done
 
@@ -66,6 +69,7 @@ function wait_for_all_coordinators() {
 
         sleep 2
     done
+    set -e
 }
 
 function getDebugArgs {
