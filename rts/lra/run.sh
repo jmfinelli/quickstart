@@ -115,9 +115,8 @@ ID5=$(start_service 8084 "trip-controller/target/quarkus-app/quarkus-run.jar" -D
 
 wait_for_all_coordinators
 
-sleep 60
-
 MAVEN_OPTS=${IP_OPTS} mvn -f trip-client/pom.xml exec:java -Dexec.args="confirm"
+sleep 10
 MAVEN_OPTS=${IP_OPTS} mvn -f trip-client/pom.xml exec:java -Dexec.args="cancel"
 
 echo -e "\n\n\n"
@@ -125,24 +124,27 @@ BOOKINGID=$(curl ${CURL_IP_OPTS} -X POST "http://localhost:8084/?hotelName=TheGr
 echo "Booking ID was: $BOOKINGID"
 
 
-###### START not working
-#When a coordinator killed and then restarted everything should keep working as usual
-#instead when restarting the coordinator the final status of the nested LRAs is not correct
-if [[ -n "$ID1" && "$ID1" =~ ^[0-9]+$ ]]; then
-  if kill -0 "$ID1" 2>/dev/null; then
-    echo "Killing PID $ID1"
-    kill -9 "$ID1"
-  else
-    echo "Process $ID1 already exited"
-  fi
-fi
-PORT=9787
-ID1=$(start_service 8080 "$WORKSPACE/rts/lra-examples/coordinator-quarkus/target/lra-coordinator-quarkus-runner.jar")
-########## END not working
+function restart_coordinator {
+    ###### START not working
+    #When a coordinator killed and then restarted everything should keep working as usual
+    #instead when restarting the coordinator the final status of the nested LRAs is not correct
+    if [[ -n "$ID1" && "$ID1" =~ ^[0-9]+$ ]]; then
+        if kill -0 "$ID1" 2>/dev/null; then
+            echo "Killing PID $ID1"
+            kill -9 "$ID1"
+        else
+            echo "Process $ID1 already exited"
+        fi
+    fi
+    PORT=9787
+    ID1=$(start_service 8080 "$WORKSPACE/rts/lra-examples/coordinator-quarkus/target/lra-coordinator-quarkus-runner.jar")
+    ########## END not working
+}
+
 
 wait_for_all_coordinators
 
-sleep 60
+sleep 40
 
 echo -e "\n\n\n"
 
@@ -172,6 +174,8 @@ for i in $(seq 1 $MAX_RETRIES); do
     fi
 
     if [ $i -lt $MAX_RETRIES ]; then
+        restart_coordinator
+        wait_for_all_coordinators
         echo "Waiting $SLEEP_TIME seconds before retry..."
         sleep $SLEEP_TIME
     else
