@@ -2,8 +2,6 @@
 set -e
 set -o pipefail
 set -x
-# ALLOW JOBS TO BE BACKGROUNDED
-set -m
 trap finish EXIT
 
 function finish() {
@@ -46,7 +44,7 @@ function wait_for_recovery() {
 
 function wait_for_all_coordinators() {
     set +e
-    echo "Waiting for coordinators to be ready..."
+    echo "===== Waiting for coordinators to be ready..."
 
     COORDINATOR_PORTS=(8080 8081 8082 8083 8084)
 
@@ -55,15 +53,15 @@ function wait_for_all_coordinators() {
 
         for port in "${COORDINATOR_PORTS[@]}"; do
             if curl -s "http://localhost:${port}/q/health/ready" >/dev/null; then
-                echo "Coordinator at ${port} ready"
+                echo "Quarkus application at ${port} ready"
                 ((CHECK++))
             else
-                echo "Not ready: ${port}"
+                echo "Quarkus application at ${port} NOT ready"
             fi
         done
 
         if (( CHECK == ${#COORDINATOR_PORTS[@]} )); then
-            echo "All coordinators are ready"
+            echo "All quarkus application are ready"
             break
         fi
 
@@ -84,7 +82,7 @@ if [ ! -f $WORKSPACE/rts/lra-examples/coordinator-quarkus/target/lra-coordinator
     mvn clean install -DskipTests -f $WORKSPACE/rts/lra-examples/coordinator-quarkus
 fi
 
-export PORT=9787
+export PORT=8787
 export JDWP=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=
 
 cd "$( dirname "${BASH_SOURCE[0]}" )"
