@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -e
 set -o pipefail
-set +x
+set -x
+# ALLOW JOBS TO BE BACKGROUNDED
+set -m
 trap finish EXIT
 
 function finish() {
