@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 set -o pipefail
-set -x
+set +x
 trap finish EXIT
 
 function finish() {
@@ -152,42 +152,20 @@ wait_for_all_coordinators
 wait_for_recovery
 echo -e "\n\n\n"
 
-BOOKINGIDENCODED=$(urlencode "$BOOKINGID")
-echo "Cancelling booking with ID: $BOOKINGIDENCODED"
+set +x
+echo "Cancelling with curl ${CURL_IP_OPTS} -X DELETE http://localhost:8084/`urlencode $BOOKINGID`"
+BOOKINIDENCODED=`urlencode $BOOKINGID`
+set -x
 
-MAX_RETRIES=6
-SLEEP_TIME=60
+echo $BOOKINIDENCODED
+RESPONSE=$(curl ${CURL_IP_OPTS} -X DELETE http://localhost:8084/$BOOKINIDENCODED -sS)
+echo -e "\nresponse is: \n $RESPONSE\n"
 
-for i in $(seq 1 $MAX_RETRIES); do
-    echo "Attempt $i to cancel booking..."
-
-    # Curl with timeout, fail early if HTTP error
-    RESPONSE=$(curl ${CURL_IP_OPTS} -sS -f --connect-timeout 5 --max-time 10 \
-        -X DELETE "http://localhost:8084/$BOOKINGIDENCODED") || true
-
-    echo -e "\nResponse:\n$RESPONSE\n"
-
-    # Skip parsing if response is empty or invalid
-    STATUS=$(echo "$RESPONSE" | jq -r ".status" 2>/dev/null || echo "")
-
-    if [ "$STATUS" = "CANCELLED" ]; then
-        echo "Booking cancelled successfully!"
-        break
-    else
-        echo "Status not CANCELLED yet: '$STATUS'"
-    fi
-
-    if [ $i -lt $MAX_RETRIES ]; then
-        restart_coordinator
-        wait_for_all_coordinators
-        wait_for_recovery
-        echo "Waiting $SLEEP_TIME seconds before retry..."
-        sleep $SLEEP_TIME
-    else
-        echo "Failed to cancel booking after $MAX_RETRIES attempts"
-        exit 1
-    fi
-done
+STATUS=$(echo $RESPONSE | jq -r ".status")
+if [ "$STATUS" != "CANCELLED" ]; then
+    echo "The status is not 'CANCELLED': $STATUS"
+    exit -1
+fi
   
 if [ "$DEBUG" ]; then
     echo "Processes are still running ($ID1 $ID2 $ID3 $ID4 $ID5) press any key to end them"
