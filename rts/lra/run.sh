@@ -33,18 +33,35 @@ urlencode() {
 }
 
 start_service() {
-  local http_port=$1
-  local jar=$2
-  shift 2
+    local http_port=$1
+    local jar=$2
+    shift 2
 
-  java ${IP_OPTS} \
-    -Dquarkus.http.port=$http_port \
-    $(getDebugArgs $PORT) \
-    "$@" \
-    -jar "$jar" \
-    >> "service-$http_port.log" 2>&1 &
+    java ${IP_OPTS} \
+      -Dquarkus.http.port=$http_port \
+      $(getDebugArgs $PORT) \
+      "$@" \
+      -jar "$jar" \
+      >> "service-$http_port.log" 2>&1 &
 
-  echo $!
+    echo $!
+}
+
+function restart_coordinator {
+    ###### START not working
+    #When a coordinator killed and then restarted everything should keep working as usual
+    #instead when restarting the coordinator the final status of the nested LRAs is not correct
+    if [[ -n "$ID1" && "$ID1" =~ ^[0-9]+$ ]]; then
+        if kill -0 "$ID1" 2>/dev/null; then
+            echo "Killing PID $ID1"
+            kill -9 "$ID1"
+        else
+            echo "Process $ID1 already exited"
+        fi
+    fi
+    PORT=9787
+    ID1=$(start_service 8080 "$WORKSPACE/rts/lra-examples/coordinator-quarkus/target/lra-coordinator-quarkus-runner.jar")
+    ########## END not working
 }
 
 
@@ -123,29 +140,9 @@ echo -e "\n\n\n"
 BOOKINGID=$(curl ${CURL_IP_OPTS} -X POST "http://localhost:8084/?hotelName=TheGrand&flightNumber1=BA123&flightNumber2=RH456" -sS | jq -r ".id")
 echo "Booking ID was: $BOOKINGID"
 
-
-function restart_coordinator {
-    ###### START not working
-    #When a coordinator killed and then restarted everything should keep working as usual
-    #instead when restarting the coordinator the final status of the nested LRAs is not correct
-    if [[ -n "$ID1" && "$ID1" =~ ^[0-9]+$ ]]; then
-        if kill -0 "$ID1" 2>/dev/null; then
-            echo "Killing PID $ID1"
-            kill -9 "$ID1"
-        else
-            echo "Process $ID1 already exited"
-        fi
-    fi
-    PORT=9787
-    ID1=$(start_service 8080 "$WORKSPACE/rts/lra-examples/coordinator-quarkus/target/lra-coordinator-quarkus-runner.jar")
-    ########## END not working
-}
-
-
+restart_coordinator
 wait_for_all_coordinators
-
 sleep 40
-
 echo -e "\n\n\n"
 
 BOOKINGIDENCODED=$(urlencode "$BOOKINGID")
