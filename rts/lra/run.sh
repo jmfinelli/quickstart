@@ -32,38 +32,6 @@ urlencode() {
     LC_COLLATE=$old_lc_collate
 }
 
-start_service() {
-    local http_port=$1
-    local jar=$2
-    shift 2
-
-    java ${IP_OPTS} \
-      -Dquarkus.http.port=$http_port \
-      $(getDebugArgs $PORT) \
-      "$@" \
-      -jar "$jar" \
-      >> "service-$http_port.log" 2>&1 &
-
-    echo $!
-}
-
-function restart_coordinator {
-    ###### START not working
-    #When a coordinator killed and then restarted everything should keep working as usual
-    #instead when restarting the coordinator the final status of the nested LRAs is not correct
-    if [[ -n "$ID1" && "$ID1" =~ ^[0-9]+$ ]]; then
-        if kill -0 "$ID1" 2>/dev/null; then
-            echo "Killing PID $ID1"
-            kill -9 "$ID1"
-        else
-            echo "Process $ID1 already exited"
-        fi
-    fi
-    PORT=9787
-    ID1=$(start_service 8080 "$WORKSPACE/rts/lra-examples/coordinator-quarkus/target/lra-coordinator-quarkus-runner.jar")
-    ########## END not working
-}
-
 function wait_for_recovery() {
     coord_port=8080
     echo " ===== waiting for recovery ......."
@@ -107,8 +75,7 @@ WORKSPACE=$(cd "$SCRIPT_DIR/../.." && pwd)
 echo "WORKSPACE is set to: ${WORKSPACE}"
 
 if [ ! -f $WORKSPACE/rts/lra-examples/coordinator-quarkus/target/lra-coordinator-quarkus-runner.jar ]; then
-    echo "Please build first the lra-coordinator-quarkus module which is needed for this demo"
-    exit -1
+    mvn clean install -DskipTests -f $WORKSPACE/rts/lra-examples/coordinator-quarkus
 fi
 
 export PORT=9787
@@ -123,19 +90,20 @@ if [ -z "$IP_OPTS" ]; then
     CURL_IP_OPTS="-4"
 fi
 
-ID1=$(start_service 8080 "$WORKSPACE/rts/lra-examples/coordinator-quarkus/target/lra-coordinator-quarkus-runner.jar")
+  java ${IP_OPTS} -Dquarkus.http.port=8080 $(getDebugArgs $PORT) -jar $WORKSPACE/rts/lra-examples/coordinator-quarkus/target/lra-coordinator-quarkus-runner.jar &
+  ID1=$!
 ((PORT++))
-
-ID2=$(start_service 8081 "$WORKSPACE/rts/lra-examples/coordinator-quarkus/target/lra-coordinator-quarkus-runner.jar")
+  java ${IP_OPTS} -Dquarkus.http.port=8081 $(getDebugArgs $PORT) -jar $WORKSPACE/rts/lra-examples/coordinator-quarkus/target/lra-coordinator-quarkus-runner.jar &
+  ID2=$!
 ((PORT++))
-
-ID3=$(start_service 8082 "hotel-service/target/quarkus-app/quarkus-run.jar" -Dlra.http.port=8080)
+  java ${IP_OPTS} -Dquarkus.http.port=8082 -Dlra.http.port=8080 $(getDebugArgs $PORT) -jar hotel-service/target/quarkus-app/quarkus-run.jar &
+  ID3=$!
 ((PORT++))
-
-ID4=$(start_service 8083 "flight-service/target/quarkus-app/quarkus-run.jar" -Dlra.http.port=8081)
+  java ${IP_OPTS} -Dquarkus.http.port=8083 -Dlra.http.port=8081 $(getDebugArgs $PORT) -jar flight-service/target/quarkus-app/quarkus-run.jar &
+  ID4=$!
 ((PORT++))
-
-ID5=$(start_service 8084 "trip-controller/target/quarkus-app/quarkus-run.jar" -Dlra.http.port=8080)
+  java ${IP_OPTS} -Dquarkus.http.port=8084 -Dlra.http.port=8080 $(getDebugArgs $PORT) -jar trip-controller/target/quarkus-app/quarkus-run.jar &
+  ID5=$!
 ((PORT++))
 
 wait_for_all_coordinators
@@ -147,7 +115,14 @@ echo -e "\n\n\n"
 BOOKINGID=$(curl ${CURL_IP_OPTS} -X POST "http://localhost:8084/?hotelName=TheGrand&flightNumber1=BA123&flightNumber2=RH456" -sS | jq -r ".id")
 echo "Booking ID was: $BOOKINGID"
 
-restart_coordinator
+###### START not working
+#When a coordinator killed and then restarted everything should keep working as usual
+#instead when restarting the coordinator the final status of the nested LRAs is not correct
+kill -9 $ID1
+java ${IP_OPTS} -Dquarkus.http.port=8080 $(getDebugArgs 8787) -jar $WORKSPACE/rts/lra-examples/coordinator-quarkus/target/lra-coordinator-quarkus-runner.jar &
+ID1=$!
+########## END not working
+
 wait_for_all_coordinators
 wait_for_recovery
 echo -e "\n\n\n"
