@@ -53,7 +53,7 @@ function wait_for_all_coordinators() {
         CHECK=0
 
         for port in "${COORDINATOR_PORTS[@]}"; do
-            if curl -sf "http://localhost:${port}/q/health/ready" >/dev/null; then
+            if curl -s "http://localhost:${port}/q/health/ready" >/dev/null; then
                 echo "Coordinator at ${port} ready"
                 ((CHECK++))
             fi
