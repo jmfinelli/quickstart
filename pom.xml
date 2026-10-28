@@ -132,6 +132,7 @@
         <module>jta-1_2-in-wildfly</module>
         <module>wildfly/commit-markable-resource</module>
         <module>jta-and-hibernate-standalone</module>
+        <module>vertx</module>
     </modules>
 
     <properties>
