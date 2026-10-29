@@ -15,7 +15,9 @@
 	<artifactId>narayana-quickstart-vertx</artifactId>
 	<packaging>pom</packaging>
 
-	<modules/>
+	<modules>
+		<module>module</module>
+	</modules>
 
 	<properties>
 		<version.vertx>5.2.2</version.vertx>
