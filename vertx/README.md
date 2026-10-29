@@ -1,7 +1,7 @@
 TransactionalVert.x
 ===================
 
-The vertx sub-project is a port of Mark Little's TransactionalVert.x repo <sup>[1](#history)</sup>. It shows how to use the narayana STM implementation in a Vert.x 3 environment. Integrating STM into Vert.x enables the sharing of objects between verticles in the same Vert.x instance that a safe with respect to concurrent transactional updates.
+The vertx sub-project is a port of Mark Little's TransactionalVert.x repo <sup>[1](#history)</sup>. It shows how to use the narayana STM implementation in a Vert.x 3 environment. Integrating STM into Vert.x enables the sharing of objects between verticles in the same Vert.x instance that are safe with respect to concurrent transactional updates.
 
 Take a look at each the README.md files in each sub-directory to see how to use STM for Vert.x:
 
@@ -16,9 +16,7 @@ Take a look at each the README.md files in each sub-directory to see how to use 
 # echo
 
   A server verticle which echos back whatever client verticles send.
-  This example requires an install of Vert.x. Refer to the README.md file for instructions.
-  The jars needed to run the example need to be downloaded and a maven pom is provided to
-  perform the download.
+  The example automatically runs during the `integration-test` phase when you run `mvn clean install`.
 
 # shared
 
@@ -28,8 +26,8 @@ Take a look at each the README.md files in each sub-directory to see how to use 
 
 # raw 
 
-  This is not a Vert.x example, rather it is a demonstrator of the locking issues that can occur when usint TxOJ (the api on which STM is built).
+  This is not a Vert.x example, rather it is a demonstrator of the locking issues that can occur when using TxOJ (the api on which STM is built).
 
 
 
-<a name="githistory">1</a>: To see a history of the commits Mark made to the original rep use the --follow option: git log --follow vertx
+<a name="githistory">1</a>: To see a history of the commits Mark made to the original repo use the --follow option: git log --follow vertx
