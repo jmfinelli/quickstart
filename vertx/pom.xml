@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>org.jboss.narayana.quickstart</groupId>
+		<artifactId>narayana-quickstarts-all</artifactId>
+		<version>7.3.5.Final-SNAPSHOT</version>
+		<relativePath>../pom.xml</relativePath>
+	</parent>
+
+	<groupId>org.jboss.narayana.quickstart</groupId>
+	<artifactId>narayana-quickstart-vertx</artifactId>
+	<packaging>pom</packaging>
+
+	<modules>
+		<module>module</module>
+		<module>shared</module>
+		<module>echo</module>
+		<module>raw</module>
+	</modules>
+
+	<properties>
+		<version.vertx>5.2.2</version.vertx>
+	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>io.vertx</groupId>
+				<artifactId>vertx-core</artifactId>
+				<version>${version.vertx}</version>
+			</dependency>
+			<dependency>
+				<groupId>io.vertx</groupId>
+				<artifactId>vertx-core</artifactId>
+				<version>${version.vertx}</version>
+				<type>test-jar</type>
+			</dependency>
+			<dependency>
+				<groupId>io.vertx</groupId>
+				<artifactId>vertx-hazelcast</artifactId>
+				<version>${version.vertx}</version>
+			</dependency>
+			<dependency>
+				<groupId>io.vertx</groupId>
+				<artifactId>vertx-unit</artifactId>
+				<version>${version.vertx}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.jboss.narayana.stm</groupId>
+				<artifactId>stm</artifactId>
+				<version>${version.org.jboss.narayana}</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<repositories>
+		<repository>
+			<id>jboss-public-repository-group</id>
+			<name>JBoss Public Maven Repository Group</name>
+			<url>https://repository.jboss.org/nexus/content/groups/public/</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
+</project>
